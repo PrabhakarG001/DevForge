@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ────────────────────────────────────────────────────────────────
+   Theme variables. Each theme sets: bg / surface / elevated /
+   border / text / muted / accent / accent2 / good / warn / bad.
+   Values are raw RGB triplets consumed by tailwind.config.js.
+   ──────────────────────────────────────────────────────────────── */
+:root,
+[data-theme='dark'] {
+  --c-bg: 9 9 12;
+  --c-surface: 15 16 21;
+  --c-elevated: 20 22 29;
+  --c-border: 42 46 58;
+  --c-text: 232 234 240;
+  --c-muted: 138 144 160;
+  --c-accent: 99 102 241; /* indigo-500 */
+  --c-accent-2: 34 211 238; /* cyan-400 */
+  --c-good: 52 211 153;
+  --c-warn: 245 158 11;
+  --c-bad: 244 63 94;
+  --grid-line: rgba(148, 163, 184, 0.05);
+  --glow-soft: rgba(99, 102, 241, 0.16);
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --c-bg: 244 245 248;
+  --c-surface: 255 255 255;
+  --c-elevated: 249 250 252;
+  --c-border: 218 222 231;
+  --c-text: 24 26 34;
+  --c-muted: 100 108 126;
+  --c-accent: 79 70 229;
+  --c-accent-2: 8 145 178;
+  --c-good: 5 150 105;
+  --c-warn: 217 119 6;
+  --c-bad: 225 29 72;
+  --grid-line: rgba(30, 41, 59, 0.06);
+  --glow-soft: rgba(79, 70, 229, 0.12);
+  color-scheme: light;
+}
+
+[data-theme='midnight'] {
+  --c-bg: 6 14 30;
+  --c-surface: 10 22 44;
+  --c-elevated: 14 28 54;
+  --c-border: 34 54 92;
+  --c-text: 224 234 248;
+  --c-muted: 126 144 174;
+  --c-accent: 56 132 255;
+  --c-accent-2: 45 212 191;
+  --c-good: 74 222 128;
+  --c-warn: 251 191 36;
+  --c-bad: 251 113 133;
+  --grid-line: rgba(96, 145, 220, 0.07);
+  --glow-soft: rgba(56, 132, 255, 0.18);
+  color-scheme: dark;
+}
+
+[data-theme='violet'] {
+  --c-bg: 14 8 24;
+  --c-surface: 22 14 36;
+  --c-elevated: 28 18 46;
+  --c-border: 58 40 88;
+  --c-text: 237 231 248;
+  --c-muted: 150 136 176;
+  --c-accent: 168 85 247;
+  --c-accent-2: 244 114 182;
+  --c-good: 110 231 183;
+  --c-warn: 251 191 36;
+  --c-bad: 251 113 133;
+  --grid-line: rgba(168, 120, 240, 0.07);
+  --glow-soft: rgba(168, 85, 247, 0.18);
+  color-scheme: dark;
+}
+
+[data-theme='forest'] {
+  --c-bg: 8 14 11;
+  --c-surface: 13 22 17;
+  --c-elevated: 17 28 22;
+  --c-border: 36 56 44;
+  --c-text: 226 238 230;
+  --c-muted: 126 148 134;
+  --c-accent: 52 211 153; /* emerald */
+  --c-accent-2: 163 230 53; /* lime */
+  --c-good: 74 222 128;
+  --c-warn: 251 191 36;
+  --c-bad: 248 113 113;
+  --grid-line: rgba(110, 190, 140, 0.06);
+  --glow-soft: rgba(52, 211, 153, 0.16);
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-base text-ink font-sans antialiased;
+  background-image:
+    radial-gradient(1100px 520px at 85% -10%, var(--glow-soft), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, var(--glow-soft), transparent 55%),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: auto, auto, 44px 44px, 44px 44px;
+  background-attachment: fixed;
+}
+
+/* Thin, unobtrusive scrollbars that follow the theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-border)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-border));
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer components {
+  .glass {
+    @apply border bg-surface/70 backdrop-blur-xl;
+  }
+  .glass-strong {
+    @apply border bg-surface/90 backdrop-blur-2xl;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:shadow-glow;
+  }
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-base;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium tracking-wide;
+  }
+  .btn {
+    @apply focus-ring inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white shadow-glow-sm hover:shadow-glow;
+  }
+  .btn-secondary {
+    @apply btn border bg-elevated/80 hover:border-accent/50 hover:text-accent;
+  }
+  .btn-ghost {
+    @apply btn hover:bg-elevated/70;
+  }
+  .input {
+    @apply focus-ring w-full rounded-lg border bg-elevated/70 px-3.5 py-2.5 text-sm text-ink placeholder:text-muted;
+  }
+  .section-title {
+    @apply text-2xl font-bold tracking-tight sm:text-3xl;
+  }
+}
+
+/* Respect users who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+::selection {
+  background: rgb(var(--c-accent) / 0.35);
+}

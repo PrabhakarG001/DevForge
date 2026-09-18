@@ -1,0 +1,142 @@
+import type { IQuestion } from '../types';
+
+const q = (x: IQuestion): IQuestion => x;
+
+export const CS_QUESTIONS: IQuestion[] = [
+  q({
+    id: 'i-cs-001', topic: 'cs-fundamentals', subTopic: 'OOPs', difficulty: 'easy',
+    questionType: 'mcq', estimatedTime: 60,
+    question: 'Which OOP principle bundles data and the methods that operate on it, while restricting direct field access?',
+    options: ['Polymorphism', 'Encapsulation', 'Inheritance', 'Abstraction'], correctOption: 1,
+    answer: 'Encapsulation',
+    explanation: 'Encapsulation groups state with behavior and gates access through methods (getters, validation), keeping invariants intact.',
+    commonMistakes: 'Confusing it with abstraction: abstraction hides complexity at the design level; encapsulation enforces it at the code level.',
+    interviewTip: 'Give a concrete example: a BankAccount that only allows deposits via deposit() which validates the amount.',
+    relatedConcepts: ['Abstraction', 'Invariants', 'Getters/setters'],
+  }),
+  q({
+    id: 'i-cs-002', topic: 'cs-fundamentals', subTopic: 'Operating Systems', difficulty: 'medium',
+    questionType: 'mcq', estimatedTime: 90,
+    question: 'Which of the following is NOT one of the four necessary conditions for deadlock?',
+    options: ['Mutual exclusion', 'Preemption of resources', 'Hold and wait', 'Circular wait'], correctOption: 1,
+    answer: 'Preemption of resources — deadlock requires NO preemption.',
+    explanation: 'The four conditions are mutual exclusion, hold-and-wait, no-preemption and circular wait. All four must hold simultaneously.',
+    commonMistakes: 'Listing "preemption" as a cause — allowing preemption actually breaks deadlock.',
+    interviewTip: 'Anchor the answer with an example of breaking circular wait via resource ordering.',
+    relatedConcepts: ['Resource allocation graph', 'Banker’s algorithm'],
+  }),
+  q({
+    id: 'i-cs-003', topic: 'cs-fundamentals', subTopic: 'Computer Networks', difficulty: 'medium',
+    questionType: 'conceptual', estimatedTime: 120,
+    question: 'A client can ping a server but the HTTPS request times out. What do you check first?',
+    answer: 'Check whether port 443 is open and reachable: security-group/firewall rules, the service actually listening on 443, and TLS handshake behavior. ICMP (ping) success only proves IP connectivity, not that TCP/443 is accepting connections.',
+    explanation: 'ping uses ICMP which requires no open TCP port. Application timeouts almost always mean a blocked port, a stopped listener, or a TLS/routing issue.',
+    commonMistakes: 'Assuming ping success means the web service is healthy.',
+    interviewTip: 'Structure the answer: L3 reachability → L4 port → L7/TLS → app logs.',
+    relatedConcepts: ['TCP handshake', 'Security groups', 'TLS'],
+  }),
+  q({
+    id: 'i-cs-004', topic: 'cs-fundamentals', subTopic: 'DBMS', difficulty: 'medium',
+    questionType: 'mcq', estimatedTime: 90,
+    question: 'Which isolation level prevents dirty reads but still allows non-repeatable reads?',
+    options: ['Read Uncommitted', 'Read Committed', 'Repeatable Read', 'Serializable'], correctOption: 1,
+    answer: 'Read Committed',
+    explanation: 'Read Committed guarantees no dirty reads; each statement sees freshly committed data, so re-reading a row can yield changes (non-repeatable read).',
+    commonMistakes: 'Assuming it also fixes phantom reads — it does not.',
+    interviewTip: 'Draw the 4-level ladder and what each level eliminates.',
+    relatedConcepts: ['MVCC', 'ANSI isolation levels'],
+  }),
+  q({
+    id: 'i-cs-005', topic: 'cs-fundamentals', subTopic: 'COA', difficulty: 'hard',
+    questionType: 'conceptual', estimatedTime: 150,
+    question: 'Why do modern CPUs reorder instruction execution, and what guarantees observable correctness?',
+    answer: 'Out-of-order execution hides latency by filling stalls with independent instructions. Correctness is preserved by data dependencies, register renaming, and precise architectural state at retirement — instructions commit in program order.',
+    explanation: 'The ISA promises sequential semantics; microarchitectural reordering is invisible except through side channels (e.g., speculative-execution attacks).',
+    commonMistakes: 'Claiming reordering changes program semantics — retirement order preserves them.',
+    interviewTip: 'Mention the memory-ordering caveat for multi-core systems (memory barriers).',
+    relatedConcepts: ['Pipelining', 'Speculation', 'Memory barriers'],
+  }),
+  q({
+    id: 'i-cs-006', topic: 'cs-fundamentals', subTopic: 'DBMS', difficulty: 'easy',
+    questionType: 'mcq', estimatedTime: 60,
+    question: 'Which normal form removes transitive dependencies (non-key → non-key)?',
+    options: ['1NF', '2NF', '3NF', 'BCNF'], correctOption: 2,
+    answer: '3NF',
+    explanation: '3NF eliminates transitive dependencies of non-prime attributes on the key; BCNF goes further for every determinant.',
+    commonMistakes: 'Mixing 2NF (partial dependencies) with 3NF (transitive).',
+    interviewTip: 'Give the classic Student → Dept → Building example.',
+    relatedConcepts: ['Functional dependency', 'BCNF'],
+  }),
+];
+
+export const DEV_QUESTIONS: IQuestion[] = [
+  q({
+    id: 'i-dev-001', topic: 'development', subTopic: 'JavaScript', difficulty: 'medium',
+    questionType: 'mcq', estimatedTime: 90,
+    question: 'What does this print?\n\nconsole.log(typeof null, typeof undefined, 0.1 + 0.2 === 0.3)',
+    options: ['"null undefined false"', '"object undefined false"', '"object object true"', '"null object false"'], correctOption: 1,
+    answer: '"object undefined false"',
+    explanation: 'typeof null is a historical bug returning "object"; undefined is its own type; 0.1+0.2 is 0.30000000000000004 in IEEE-754, so the strict equality fails.',
+    commonMistakes: 'Saying typeof null === "null" or that floats are exact.',
+    interviewTip: 'Follow up with how to check for null properly: value === null.',
+    relatedConcepts: ['IEEE-754', 'Equality operators'],
+  }),
+  q({
+    id: 'i-dev-002', topic: 'development', subTopic: 'React', difficulty: 'medium',
+    questionType: 'conceptual', estimatedTime: 120,
+    question: 'Your list re-renders every second even though its data is unchanged. Which React mechanisms do you reach for and why?',
+    answer: 'Memoize the list item components (React.memo) and stabilize props: useCallback for handlers, useMemo for derived arrays, and stable keys. If state lives too high, colocate the ticking state so only the timer component re-renders.',
+    explanation: 'React re-renders a component when the parent renders and props/reference equality fails. Reference-stable props let memo bail out.',
+    commonMistakes: 'Wrapping everything in useMemo/useCallback blindly instead of fixing state colocation.',
+    interviewTip: 'Mention React DevTools Profiler to measure before optimizing.',
+    relatedConcepts: ['Reconciliation', 'Referential equality'],
+  }),
+  q({
+    id: 'i-dev-003', topic: 'development', subTopic: 'TypeScript', difficulty: 'medium',
+    questionType: 'coding', language: 'typescript', estimatedTime: 240,
+    question: 'Write a type-safe function that filters null/undefined out of an array and narrows the element type.',
+    starterCode: 'type Maybe<T> = T | null | undefined;\n\nfunction compact<T>(arr: Array<Maybe<T>>): T[] {\n  // your code\n}\n\n// expect: [1, 2, 3]\nconsole.log(compact([1, null, 2, undefined, 3]));',
+    answer: `function compact<T>(arr: Array<Maybe<T>>): T[] {
+  const out: T[] = [];
+  for (const v of arr) if (v != null) out.push(v);
+  return out;
+}
+
+console.log(compact([1, null, 2, undefined, 3])); // [1, 2, 3]`,
+    explanation: 'The != null check narrows T | null | undefined to T because TypeScript understands the two-sided null check. A filter callback needs an explicit type-guard signature.',
+    commonMistakes: 'Using arr.filter(v => v != null) without a type guard — the return type stays Array<Maybe<T>>.',
+    interviewTip: 'Show the type-guard variant: arr.filter((v): v is T => v != null).',
+    relatedConcepts: ['Type guards', 'Generics'],
+  }),
+  q({
+    id: 'i-dev-004', topic: 'development', subTopic: 'REST APIs', difficulty: 'hard',
+    questionType: 'conceptual', estimatedTime: 150,
+    question: 'Design the API contract for "cancel order 42". Cover verb, status codes, and idempotency.',
+    answer: 'POST /orders/42/cancel (a state transition, not a resource fetch) or PATCH with an explicit status. Return 200 with the updated order; 404 for a foreign/missing order; 409 if it cannot be cancelled (already shipped); 401/403 for auth failures. Make it idempotent: cancelling an already-cancelled order returns 200 with current state, not an error.',
+    explanation: 'Cancelling is a domain action with side effects — a state-transition endpoint communicates intent better than a bare PATCH of fields.',
+    commonMistakes: 'Using DELETE /orders/42 (implies removal) and returning generic 400s without machine-readable error codes.',
+    interviewTip: 'Explicitly discuss idempotency — interviewers probe it for payments-like flows.',
+    relatedConcepts: ['Idempotency keys', 'HTTP semantics'],
+  }),
+  q({
+    id: 'i-dev-005', topic: 'development', subTopic: 'Git & GitHub', difficulty: 'easy',
+    questionType: 'mcq', estimatedTime: 60,
+    question: 'Which command rewrites YOUR feature branch onto the latest main with a linear history?',
+    options: ['git merge main', 'git rebase main', 'git cherry-pick main', 'git pull --no-rebase'], correctOption: 1,
+    answer: 'git rebase main',
+    explanation: 'Rebase replays your commits on top of main producing linear history. Never rebase shared/published branches.',
+    commonMistakes: 'Rebasing a shared branch and rewriting others’ history.',
+    interviewTip: 'State the "golden rule": don’t rebase public branches.',
+    relatedConcepts: ['Merge vs rebase', 'Force-with-lease'],
+  }),
+  q({
+    id: 'i-dev-006', topic: 'development', subTopic: 'Node.js', difficulty: 'medium',
+    questionType: 'conceptual', estimatedTime: 120,
+    question: 'A Node endpoint does synchronous JSON.parse on a 50 MB payload and stalls other requests. What are your options?',
+    answer: 'Move the parse off the event loop: stream the body (JSON.parse on chunks via a streaming parser), offload to a worker thread (worker_threads) or child process, or reject oversized payloads at the proxy with 413 and chunk the upload. Also consider rate-limiting that route.',
+    explanation: 'Event-loop-blocking work degrades every concurrent request; the fix is to keep heavy CPU work off the main thread or avoid materializing the whole payload.',
+    commonMistakes: 'Suggesting only "add more servers" without addressing the per-request stall.',
+    interviewTip: 'Mention practical middleware: body limits, streaming parsers, worker pools.',
+    relatedConcepts: ['Event loop', 'worker_threads', 'Backpressure'],
+  }),
+];
