@@ -310,26 +310,24 @@ npm run preview    # serve the production build locally
 
 ## Screenshots
 
-> Placeholders — replace `docs/screenshots/…` paths with actual captures before publishing.
+<!-- Placeholder checklist — capture screenshots and replace with actual images:
+     ![Homepage](docs/screenshots/home.png) ... etc. Do not add fake images. -->
 
-# Screenshots
+Screenshots to capture:
 
-| | |
-|---|---|
-| ![Homepage](docs/screenshots/home.png) | ![3D Hero](docs/screenshots/hero-3d.png) |
-| *Homepage* | *3D Hero* |
-| ![Learning Roadmap](docs/screenshots/roadmap.png) | ![CS Fundamentals](docs/screenshots/cs-fundamentals.png) |
-| *Learning Roadmap* | *CS Fundamentals* |
-| ![Interview Dashboard](docs/screenshots/interview-dashboard.png) | ![Today's Questions](docs/screenshots/todays-questions.png) |
-| *Interview Dashboard* | *Today's Questions* |
-| ![Interview Question Interface](docs/screenshots/question-interface.png) | ![PostgreSQL Interview](docs/screenshots/postgresql.png) |
-| *Interview Question Interface* | *PostgreSQL Interview* |
-| ![Knowledge Percentage Popup](docs/screenshots/knowledge-popup.png) | ![Answer Explanation](docs/screenshots/answer-explanation.png) |
-| *Knowledge Percentage Popup* | *Answer Explanation* |
-| ![Streak Dashboard](docs/screenshots/streak.png) | ![Badges](docs/screenshots/badges.png) |
-| *Streak Dashboard* | *Badges* |
-| ![Revision Mode](docs/screenshots/revision.png) | |
-| *Revision Mode* | |
+- [ ] Homepage
+- [ ] 3D Hero
+- [ ] Learning Roadmap
+- [ ] CS Fundamentals
+- [ ] Interview Dashboard
+- [ ] Today's Questions
+- [ ] Interview Question Interface
+- [ ] PostgreSQL Interview
+- [ ] Knowledge Percentage Popup
+- [ ] Answer Explanation
+- [ ] Streak Dashboard
+- [ ] Badges
+- [ ] Revision Mode
 
 ## Future Improvements
 
