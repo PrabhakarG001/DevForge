@@ -344,4 +344,4 @@ npm run preview    # serve the production build locally
 
 ## License
 
-No license has been selected yet — all rights reserved by the author until one is added.
+Released under the [MIT License](LICENSE) — Copyright (c) 2026 Prabhakar Gupta.
