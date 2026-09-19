@@ -144,13 +144,19 @@ export function InterviewDataProvider({ uid, children }: { uid: string | null; c
         if (cancelled) return;
         if (snap.exists()) {
           const remote = snap.data() as Partial<InterviewState>;
+          // Guard against a previously-clobbered zeroed streak on the server:
+          // keep whichever of (remote, local) is stronger.
+          const local = loadLocal(owner);
+          const rStreak = remote.streak ?? emptyInterviewState.streak;
+          const lStreak = local.streak;
+          const streak =
+            rStreak.current + rStreak.longest >= lStreak.current + lStreak.longest ? rStreak : lStreak;
           const remoteState = normalize({
             ...emptyInterviewState,
             ...remote,
-            streak: { ...emptyInterviewState.streak, ...(remote.streak ?? {}) },
+            streak,
             badges: remote.badges ?? { unlocked: [] },
           });
-          const local = loadLocal(owner);
           setState(mergeStates(remoteState, local));
         }
         setCloudSynced(true);
@@ -197,27 +203,34 @@ export function InterviewDataProvider({ uid, children }: { uid: string | null; c
   );
 
   const completeSession = useCallback(
-    async (_mode: string, summaries: SessionSummary[]) => {
+    async (_mode: string, _summaries: SessionSummary[]) => {
       const date = todayStr();
-      const gap = summaries.length >= 3 ? 0 : 0; // completion itself marks activity
-      void gap;
-      let streak: UserStreak = emptyInterviewState.streak;
-      setState((s) => {
-        const prevGap = daysBetween(s.lastCompletedDate ?? '', date);
-        const current = prevGap === 0 ? s.streak.current : prevGap === 1 ? s.streak.current + 1 : 1;
-        streak = { current, longest: Math.max(s.streak.longest, current), lastActiveDate: date };
-        const unlockedSet = new Set(s.badges.unlocked.map((b) => b.days));
-        const newly = STREAK_MILESTONES.filter((d) => d <= current && !unlockedSet.has(d));
-        return normalize({
-          ...s,
-          streak,
-          lastCompletedDate: date,
-          badges: {
-            unlocked: [
-              ...s.badges.unlocked,
-              ...newly.map((days) => ({ days, unlockedAt: new Date().toISOString() })),
-            ],
-          },
+      // Compute the new streak from the LATEST local state (a setState updater
+      // runs asynchronously — reading a closure variable here could push a
+      // stale/zeroed streak to Firestore).
+      const streak: UserStreak = await new Promise<UserStreak>((resolve) => {
+        setState((s) => {
+          const prevGap = daysBetween(s.lastCompletedDate ?? '', date);
+          const current = prevGap === 0 ? s.streak.current : prevGap === 1 ? s.streak.current + 1 : 1;
+          const next: UserStreak = {
+            current,
+            longest: Math.max(s.streak.longest, current),
+            lastActiveDate: date,
+          };
+          resolve(next);
+          const unlockedSet = new Set(s.badges.unlocked.map((b) => b.days));
+          const newly = STREAK_MILESTONES.filter((d) => d <= current && !unlockedSet.has(d));
+          return normalize({
+            ...s,
+            streak: next,
+            lastCompletedDate: date,
+            badges: {
+              unlocked: [
+                ...s.badges.unlocked,
+                ...newly.map((days) => ({ days, unlockedAt: new Date().toISOString() })),
+              ],
+            },
+          });
         });
       });
       await pushToCloud({ streak, lastCompletedDate: date });

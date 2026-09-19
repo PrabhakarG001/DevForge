@@ -199,11 +199,10 @@ export function buildDailySet(mode: string, count: number, owner: string, state:
   });
   const fresh: IQuestion[] = [];
   const stale: IQuestion[] = [];
+  // ids served in the last 3 days (daily sets) — these are the "stale" pool
   const recentIds = new Set<string>();
-  for (let i = 1; i <= 3; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    recentIds.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  for (const ids of Object.values(state.servedLog)) {
+    for (const id of ids) recentIds.add(id);
   }
   for (const q of pool) {
     (recentIds.has(q.id) || state.attempts.some((a) => a.questionId === q.id && a.attemptedAt.slice(0, 10) >= recent3DaysStart())

@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle, ArrowRight, BookOpen, Brain, CalendarDays, CheckCircle2, Database, Flame,
-  Gauge, History, ListChecks, Play, Sparkles, Target, Timer, TrendingDown, Trophy, XCircle,
+  AlertTriangle, ArrowRight, BookOpen, CalendarDays, CheckCircle2, Database,
+  Gauge, History, ListChecks, Play, Sparkles, Target, Timer, TrendingDown, Trophy,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { IQuestion, MockModeId } from '../data/interview/types';
 import { ALL_QUESTIONS } from '../data/interview/questions';
 import { INTERVIEW_TOPICS, MOCK_MODES, topicLabel, QUESTION_TYPE_META } from '../data/interview/topics';
-import { useSelectionEngine, weakTopics } from '../hooks/useSelectionEngine';
+import { useSelectionEngine, weakTopics, shuffled } from '../hooks/useSelectionEngine';
 import { todayStr, useInterviewData, revisionCandidates } from '../hooks/useInterviewData';
 import { useAuth } from '../context/AuthContext';
+import { useProgress } from '../hooks/useProgress';
 import MockRunner from '../components/interview/MockRunner';
 import StreakPanel from '../components/interview/StreakPanel';
 import ReviseCard from '../components/interview/ReviseCard';
@@ -34,6 +35,7 @@ export default function InterviewPrep() {
   const { user } = useAuth();
   const data = useInterviewData();
   const engine = useSelectionEngine();
+  const { addHistory } = useProgress();
   const [phase, setPhase] = useState<Phase>('lobby');
   const [activeMock, setActiveMock] = useState<{ mode: MockModeId | string; label: string; questions: IQuestion[] } | null>(null);
 
@@ -118,7 +120,10 @@ export default function InterviewPrep() {
       return;
     }
     if (modeId === 'revision') {
-      const qs = engine.pick({ topics: null, types: null, count: TOPIC_COUNT, weakBias: 1 });
+      // true revision: prioritize the user's actual weak history; fall back to
+      // weak-topic-biased picks when there is not enough history yet
+      const rev = revisionCandidates(data.state, ALL_QUESTIONS).map((r) => r.question);
+      const qs = rev.length >= 3 ? rev.slice(0, TOPIC_COUNT) : engine.pick({ topics: null, types: null, count: TOPIC_COUNT, weakBias: 1 });
       startWith(modeId, label, qs);
       return;
     }
@@ -139,6 +144,18 @@ export default function InterviewPrep() {
     startWith(`topic:${topicId}`, topicLabel(topicId), engine.pick({ topics: [topicId], types: null, count: TOPIC_COUNT }));
   };
 
+  /** PostgreSQL-focused revision: wrong/low-confidence PG questions first,
+   * then unattempted PG questions to fill the set. */
+  const pgRevisionQuestions = () => {
+    const rev = revisionCandidates(data.state, ALL_QUESTIONS)
+      .filter((r) => r.question.topic === 'postgresql')
+      .map((r) => r.question);
+    if (rev.length >= TOPIC_COUNT) return rev.slice(0, TOPIC_COUNT);
+    const used = new Set(rev.map((q) => q.id));
+    const fresh = ALL_QUESTIONS.filter((q) => q.topic === 'postgresql' && !used.has(q.id));
+    return [...rev, ...shuffled(fresh)].slice(0, TOPIC_COUNT);
+  };
+
   if (phase === 'mock' && activeMock) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
@@ -147,10 +164,18 @@ export default function InterviewPrep() {
           modeLabel={activeMock.label}
           questions={activeMock.questions}
           data={data}
-          onFinish={() => {
-            void data.completeSession(activeMock.mode, activeMock.questions.map((q) => ({
-              questionId: q.id, isCorrect: null, confidencePercentage: null, timeTaken: 0, timedOut: false,
-            })));
+          onFinish={(summaries) => {
+            const answered = summaries.filter((s) => s.isCorrect != null || s.timedOut);
+            void data.completeSession(activeMock.mode, summaries);
+            if (answered.length > 0) {
+              const correct = answered.filter((s) => s.isCorrect === true).length;
+              addHistory({
+                id: `${activeMock.mode}-${Date.now()}`,
+                label: activeMock.label,
+                score: `${correct}/${answered.length} · ${answered.length ? Math.round((correct / answered.length) * 100) : 0}%`,
+                at: Date.now(),
+              });
+            }
             setActiveMock(null);
             setPhase('lobby');
           }}
@@ -232,7 +257,7 @@ export default function InterviewPrep() {
 
           {/* PostgreSQL dedicated card */}
           <PostgresCard
-            onBrowse={() => startCustomTopic('postgresql')}
+            onBrowse={() => startWith('pg-revision', 'PostgreSQL Revision', pgRevisionQuestions())}
             onStartMock={() => startMode('postgresql')}
           />
         </div>
@@ -618,6 +643,3 @@ function DashStat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-// icons kept for clarity of intent in future iterations
-void Brain; void Flame; void XCircle;

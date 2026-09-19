@@ -19,11 +19,15 @@ const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '
 
 const editorLanguageOf = (q: IQuestion): ILanguage => q.language ?? 'javascript';
 
-/** Which editor surface does this question need? */
+/** Which editor surface does this question need?
+ * MCQ wins over everything: some code-analysis/debugging questions present
+ * their "what does this print?" snippet in the question body with MCQ options. */
 function surfaceOf(q: IQuestion): 'mcq' | 'editor' | 'sql' | 'design' | 'prose' {
   if (q.questionType === 'mcq') return 'mcq';
+  if (q.options && q.correctOption != null) return 'mcq';
   if (q.questionType === 'sql') return 'sql';
   if (q.questionType === 'system-design') return 'design';
+  if (q.language === 'sql') return 'sql';
   if (CODE_TYPES.includes(q.questionType)) return 'editor';
   if (PROSE_TYPES.includes(q.questionType)) return 'prose';
   return 'prose';
@@ -34,7 +38,7 @@ interface MockRunnerProps {
   modeLabel: string;
   questions: IQuestion[];
   data: InterviewData;
-  onFinish: () => void;
+  onFinish: (summaries: SessionSummary[]) => void;
   onExit: () => void;
 }
 
@@ -65,6 +69,13 @@ export default function MockRunner({ mode, modeLabel, questions, data, onFinish,
 
   const [knowledgePct, setKnowledgePct] = useState(50);
   const [attemptRecorded, setAttemptRecorded] = useState(false);
+
+  /** Live slider value — submitCurrent reads this at grade time so the grade
+   * always reflects the confidence the user actually entered. */
+  const confidenceRef = useRef(knowledgePct);
+  useEffect(() => {
+    confidenceRef.current = knowledgePct;
+  }, [knowledgePct]);
 
   const current = session[idx];
   const surface = surfaceOf(current.question);
@@ -97,16 +108,19 @@ export default function MockRunner({ mode, modeLabel, questions, data, onFinish,
       const q = current.question;
       const used = opts.timedOut ? q.estimatedTime : q.estimatedTime - secondsLeft;
 
-      // correctness evaluation per surface
-      let isCorrect: boolean | null = null;
+      // Confidence entered by the user on this question (never the slider default).
+      const confidence: number | null = opts.timedOut || opts.skipped ? null : knowledgePct;
+
+      // Correctness evaluation per surface. Open-ended answers are graded by
+      // the confidence the user actually enters in the next step — a ref that
+      // is kept in sync so the grade reflects the final slider value.
+      let isCorrect: boolean;
       if (opts.timedOut || opts.skipped) {
-        isCorrect = false;
+        isCorrect = false; // unanswered = incorrect (recorded as timeout/skip)
       } else if (surface === 'mcq') {
         isCorrect = selectedOption === q.correctOption;
       } else {
-        // open-ended surfaces: self-assessment decides correctness signal;
-        // the recorded confidence is the real performance proxy
-        isCorrect = knowledgePct >= 50;
+        isCorrect = confidenceRef.current >= 50;
       }
 
       setSession((ss) =>
@@ -117,7 +131,7 @@ export default function MockRunner({ mode, modeLabel, questions, data, onFinish,
                 timeTaken: Math.max(1, Math.round(used)),
                 status: opts.timedOut ? 'timed-out' : opts.skipped ? 'skipped' : 'answered',
                 isCorrect,
-                confidencePercentage: opts.timedOut || opts.skipped ? null : knowledgePct,
+                confidencePercentage: confidence,
               }
             : sq,
         ),
@@ -128,7 +142,7 @@ export default function MockRunner({ mode, modeLabel, questions, data, onFinish,
         questionId: q.id,
         attemptedAt: new Date().toISOString(),
         isCorrect,
-        confidencePercentage: opts.timedOut || opts.skipped ? null : knowledgePct,
+        confidencePercentage: confidence,
         timeTaken: Math.max(1, Math.round(used)),
         difficulty: q.difficulty,
         topic: q.topic,
@@ -144,7 +158,7 @@ export default function MockRunner({ mode, modeLabel, questions, data, onFinish,
         setPhase('confidence');
       }
     },
-    [attemptRecorded, current, data, idx, knowledgePct, secondsLeft, selectedOption, surface],
+    [attemptRecorded, current, data, idx, secondsLeft, selectedOption, surface],
   );
 
   // auto-submit on timeout
@@ -165,6 +179,7 @@ export default function MockRunner({ mode, modeLabel, questions, data, onFinish,
         : {},
     );
     setKnowledgePct(50);
+    confidenceRef.current = 50;
     setAttemptRecorded(false);
     setSecondsLeft(current.question.estimatedTime);
   }, [idx, current]);
@@ -225,7 +240,13 @@ export default function MockRunner({ mode, modeLabel, questions, data, onFinish,
           </div>
         )}
         <div className="mt-7 flex flex-wrap gap-3">
-          <button type="button" className="btn-primary" onClick={onFinish}>
+          <button type="button" className="btn-primary" onClick={() => onFinish(session.map((s) => ({
+            questionId: s.question.id,
+            isCorrect: s.isCorrect,
+            confidencePercentage: s.confidencePercentage,
+            timeTaken: s.timeTaken,
+            timedOut: s.status === 'timed-out',
+          })))}>
             <RotateCcw size={15} /> Back to Interview Prep
           </button>
         </div>

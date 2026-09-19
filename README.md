@@ -6,7 +6,8 @@ DevForge is a developer-focused learning and SDE interview-preparation platform 
 Full Stack Development, AI/ML, Computer Science Fundamentals, PostgreSQL, DevOps, Testing &
 Security, System Design, Generative AI, AI Automation, Number Theory and SDE Interview
 Preparation** — with structured roadmaps, a 3D hero, global search, 5 themes and a full mock
-interview simulator backed by Google sign-in and Firestore.
+interview simulator backed by Google sign-in and Firestore. DevForge does **not** promise jobs or
+salaries — it provides structured practice and honest progress tracking.
 
 ## Project Overview
 
@@ -19,7 +20,11 @@ discussion.
 The interview simulator generates **daily randomized question sets** (seeded per user + day, so
 they are stable for the day yet never repeat the same order), tracks **confidence, correctness,
 time, streaks, badges and revision history**, and automatically builds a **3-day revision queue**
-from mistakes, timeouts and low-confidence answers.
+from mistakes, timeouts and low-confidence answers. Question sets come from a typed question-bank
+module that feeds a **seeded selection engine** — every question carries a `questionType`
+(conceptual, scenario, code-analysis, debugging, MCQ, technical-explanation, comparison, coding,
+SQL, system-design, project-based, behavioral-technical), a difficulty and a per-question time
+budget derived from all three.
 
 ## Key Features
 
@@ -46,13 +51,20 @@ from mistakes, timeouts and low-confidence answers.
   MCQ, technical explanation, comparison, practical coding, SQL/PostgreSQL, system design,
   project-based and behavioral-technical
 - **Easy / Medium / Hard difficulty** that changes the question content, not just a label
-- **Question-specific timers** — per-question time limit derived from difficulty, type and topic
+- **Question-specific timers** — per-question time limit derived from difficulty, type and topic;
+  on timeout the attempt is auto-submitted and recorded as a timeout
 - **Automatic editor** — Monaco opens the right environment per question language (JS, TS, Python,
-  C++, Java) and a **SQL/PostgreSQL editor** for database questions
+  C++, Java) and a **SQL/PostgreSQL editor** for database questions; MCQs render as options even
+  when the question carries a code snippet
+- **PostgreSQL Revision mode** — a dedicated PG revision set built from wrong/low-confidence PG
+  answers first, then fresh PG questions
 - **System Design workspace** — structured design-answer sections (Requirements, APIs, Data Model,
   Architecture, Scaling & Caching, Trade-offs)
 - **Knowledge/confidence percentage** — self-assessment (0–100% with quick 25/50/75/100 shortcuts)
-  recorded *before* answers are revealed, enabling perceived-vs-actual performance comparison
+  recorded *before* answers are revealed; for open-ended questions the **entered confidence is the
+  recorded correctness signal** (≥50% counts as correct), so the grade always reflects what the
+  user actually reported — not a default
+- **Session history** — completed mocks are written to the practice history on the Progress page
 - **Knowledge Recorded popup** — confidence, correctness, time, topic and difficulty at a glance
 - **Answer explanations** — correct answer, why it is correct, common mistakes, interview tips and
   related concepts; code answers render as code, SQL answers as SQL

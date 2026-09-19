@@ -379,10 +379,10 @@ Rule of thumb: inheritance fixes the is-a relationship at compile time; composit
     id: 'i-sc-016', topic: 'aptitude', subTopic: 'Quantitative Aptitude', difficulty: 'medium',
     questionType: 'mcq', estimatedTime: 120,
     question: 'Two taps fill a tank in 12 and 18 hours respectively. A drain empties it in 24 hours. With all three open, how long to fill the empty tank?',
-    options: ['13 h 20 min', '14 h 24 min', '15 h 30 min', '16 h'],
-    correctOption: 1,
-    answer: '14 h 24 min',
-    explanation: 'Rates per hour: 1/12 + 1/18 − 1/24 = (6 + 4 − 3)/72 = 7/72. Time = 72/7 h ≈ 10.28h… recompute: 6+4=10, 10−3=7 → 7/72 tank/h ⇒ 72/7 ≈ 10.29 h. (Careful: option math — 72/7 h = 10h17m; the listed correct option assumes taps 9h & 18h. Always derive the rate equation first.)',
+    options: ['10 h 17 min', '11 h 25 min', '12 h 30 min', '14 h 24 min'],
+    correctOption: 0,
+    answer: '10 h 17 min (72/7 hours)',
+    explanation: 'Work in rates per hour: 1/12 + 1/18 − 1/24 = (6 + 4 − 3)/72 = 7/72 tank per hour. Time = 72/7 h ≈ 10.29 h ≈ 10 h 17 min. Options that ignore the drain (like 14 h 24 min) come from 1/12 + 1/18 = 5/36 ⇒ 36/5 = 7.2 h — also check it, but the drain is stated, so subtract it.',
     commonMistakes: 'Adding times instead of rates; forgetting to subtract the drain.',
     interviewTip: 'Verbalize the rate equation before arithmetic — partial credit survives slips.',
     relatedConcepts: ['Work-rate problems', 'LCM method'],
@@ -515,6 +515,117 @@ Changes (pick per need):
     commonMistakes: 'Blaming rounding or floating point; jumping to SERIALIZABLE when REPEATABLE READ suffices.',
     interviewTip: 'Say "two snapshots, one report" — memorable phrasing interviewers remember.',
     relatedConcepts: ['Snapshot isolation', 'Isolation levels', 'Consistent reads'],
+  }),
+];
+
+/**
+ * Technical-explanation questions: "explain X the way you would to an
+ * interviewer" — tests structured communication, not memorized definitions.
+ * Graded by self-assessed confidence; model answers demonstrate HOW to speak.
+ */
+export const EXPLANATION_QUESTIONS: IQuestion[] = [
+  q({
+    id: 'i-ex-001', topic: 'cs-fundamentals', subTopic: 'Computer Networks', difficulty: 'medium',
+    questionType: 'technical-explanation', estimatedTime: 180,
+    question: 'Walk me through what happens when you type a URL and press Enter — but skip the encyclopedia version. Focus on the three steps interviewers actually probe: DNS resolution, the TLS handshake, and where each can fail.',
+    answer: `Strong answer structure (one line per hop, then the failure modes):
+
+1. Browser cache → OS resolver → recursive DNS: name resolves to an IP. Failure: no network, NXDOMAIN, or a poisoned/stale record.
+2. TCP connection to 443 — SYN, SYN-ACK, ACK. Failure: firewall drop (connection timeout) vs RST (port closed) — different diagnoses.
+3. TLS handshake: ClientHello → ServerHello + certificate → key exchange → finished. TLS 1.3 does this in one round-trip (1-RTT), resumable with 0-RTT. Failure: expired/mismatched certificate, blocked SNI, unsupported cipher.
+4. HTTP request/response: method+path+headers, server renders or serves, browser parses HTML → fires subresource loads.
+
+Interviewers probe: the difference between a timeout (packets dropped) and a refused connection (RST), what the certificate actually proves, and what changes with HTTP/2/3 (one connection, multiplexed streams).`,
+    explanation: 'This question is about communication as much as knowledge: naming failure modes at each hop (timeout vs RST, cert vs cipher) is what separates a rehearsed answer from an owned one.',
+    commonMistakes: 'Reciting the OSI model; skipping failure modes entirely; not knowing what TLS actually authenticates.',
+    interviewTip: 'Pick the three hops you know cold and go deep there — "I will focus on DNS, TLS and the request path" is a strong opening.',
+    relatedConcepts: ['DNS', 'TLS handshake', 'TCP vs UDP', 'HTTP/2'],
+  }),
+  q({
+    id: 'i-ex-002', topic: 'development', subTopic: 'React', difficulty: 'medium',
+    questionType: 'technical-explanation', estimatedTime: 150,
+    question: 'Explain useEffect cleanup to a junior developer: what it is for, when it runs, and what bug class appears when it is forgotten. Use a subscription example.',
+    answer: `Explain it as "the effect\'s undo": every effect that acquires something outside React (subscription, timer, socket, event listener) must return a function that releases it.
+
+function usePrice(ticker) {
+  const [price, setPrice] = useState(null);
+  useEffect(() => {
+    const socket = subscribe(ticker, setPrice);
+    return () => socket.close(); // cleanup
+  }, [ticker]);
+  return price;
+}
+
+When it runs: after every re-render where deps changed, BEFORE the next effect fires, and once more on unmount. React does this so the previous effect\'s resources never outlive its inputs.
+
+The bug class when forgotten: with [ticker] switching from "ETH" to "BTC", the old subscription stays open and its updates keep calling setPrice — the UI shows BTC\'s address flashing ETH prices, sockets leak per navigation, and tests flake with "state update on unmounted component".
+
+Mental model for the junior: open file → close file. React just guarantees the close happens at the right moment.`,
+    explanation: 'The teaching frame (acquire/release) plus the concrete corrupted-UI symptom is the signal — juniors usually know cleanup exists but not what breaks without it.',
+    commonMistakes: 'Saying cleanup runs "on unmount" only; missing that it also runs before each re-run of the effect.',
+    interviewTip: 'The stale-subscription flash (old data overwriting new) is the detail interviewers wait to hear.',
+    relatedConcepts: ['Effect lifecycle', 'Memory leaks', 'Stale closures'],
+  }),
+  q({
+    id: 'i-ex-003', topic: 'databases', subTopic: 'Transactions', difficulty: 'medium',
+    questionType: 'technical-explanation', estimatedTime: 150,
+    question: 'Explain ACID to a non-database engineer using ONE concrete example (a ₹500 transfer between two accounts). Tell the story first, then name the properties.',
+    answer: `Story first: I send you ₹500 from my account.
+
+- The debit and the credit are ONE unit of work. If the server dies after the debit but before the credit, the bank restarts and finds neither happened — or both. Money is never in limbo. → That is Atomicity.
+- Between "money leaves my account" and "money arrives", no one can observe an intermediate state — not another customer, not a report. Every observer sees before-or-after, never mid-flight. → Consistency/Isolation in observable terms.
+- My balance can never go negative: the schema itself rejects the transfer if funds are insufficient. → Consistency as enforced invariants.
+- The moment the app says "sent", the money is sent — even if the data center loses power a millisecond later. The confirmation is a promise. → Durability.
+
+Close with why a junior should care: without these guarantees, every feature that touches money needs custom recovery code; with them, you write BEGIN…COMMIT and lean on the engine.`,
+    explanation: 'Explaining-by-story then labeling is the tested skill: engineers who can only recite the four words usually cannot apply them when designing a schema or debugging a deadlock.',
+    commonMistakes: 'Defining the four terms abstractly and never connecting them to the example; conflating consistency (invariants) with isolation (concurrency).',
+    interviewTip: 'The "money never in limbo" and "confirmation is a promise" phrases land well — concrete, memorable, correct.',
+    relatedConcepts: ['ACID', 'Transactions', 'Schema constraints'],
+  }),
+];
+
+/**
+ * Behavioral-technical questions: workplace-judgment scenarios where the
+ * answer must contain the actual technical argument, not soft-skill fluff.
+ */
+export const BEHAVIORAL_QUESTIONS: IQuestion[] = [
+  q({
+    id: 'i-bt-001', topic: 'testing-security', subTopic: 'Security Fundamentals', difficulty: 'medium',
+    questionType: 'behavioral-technical', estimatedTime: 180,
+    question: 'Your team lead wants to ship Friday, but you found that the new payment endpoint logs full card numbers to the error tracker. The lead says "we will rotate the logs next sprint." What do you do — and what is your exact technical argument?',
+    answer: `Do not ship; escalate with facts, not alarm. The exact argument:
+
+1. It is not a "log hygiene" problem — PCI-DSS scope: storing PAN in logs (even transiently) pulls the whole logging pipeline into PCI scope and is an explicit violation (requirement 3.x). If the tracker is a SaaS, card data has already left our trust boundary — that is a disclosure decision, not a cleanup task.
+2. Containment is small and shippable by Friday: mask in the serializer (keep last 4), add a redaction rule in the tracker for the field, purge the affected log range. Hours of work, not days.
+3. The cost asymmetry: shipping means the data sits in a third party until "next sprint" — every hour is retention we chose; fixing now costs one day; a leak costs the audit, the client, and possibly the vendor relationship.
+
+How to communicate: private message to the lead with the three points and the tiny containment PR already open — make the secure path the easy path. If overruled, it goes to the security/compliance owner in writing (a drafted note, not a public callout).
+
+What NOT to do: merge it with a TODO; argue in the team channel; silently redact on a branch that misses the release.`,
+    explanation: 'The scoring rubric: a real regulatory fact (PCI scope), a concrete containment that does not kill the deadline, cost asymmetry framing, and escalation that is professional rather than performative.',
+    commonMistakes: 'Soft-pedaling it into a preference ("best practice"); framing it as shipping vs not-shipping when a third option (mask + purge before ship) exists.',
+    interviewTip: 'Interviewers want judgment plus a constructive option — "make the secure path the easy path" is the phrase that lands.',
+    relatedConcepts: ['PCI-DSS', 'Data minimization', 'Incident escalation'],
+  }),
+  q({
+    id: 'i-bt-002', topic: 'system-design', subTopic: 'High-Level Design', difficulty: 'hard',
+    questionType: 'behavioral-technical', estimatedTime: 210,
+    question: 'You propose adding Redis caching to a slow read API. A senior teammate pushes back: "it adds a failure mode and invalidation complexity — just fix the DB indexes." You checked: the endpoint fans out to five queries per request, each indexed and fast (2–8 ms each). Who is right, and how do you resolve the disagreement?',
+    answer: `The teammate is right on the facts given — and the resolution is to reframe with numbers, not opinions.
+
+Their case is strong: 5 queries × ~5 ms ≈ 25 ms of DB time; indexes are already fine. The remaining cost is round-trips + serialization + ORM overhead, which Redis does not remove — it moves them (cache GET + serialize) and adds invalidation logic plus a new dependency that can fail.
+
+The data-driven middle ground:
+1. Measure the actual breakdown first: DB time vs serialization vs network. If queries are 5 of 120 ms, indexing was never the bottleneck and neither is caching — the fix is batching the five queries (one JOIN or a single round-trip with WHERE IN).
+2. If after batching the p95 is still over target AND the payload is read-heavy with tolerable staleness, THEN Redis is justified — with a TTL and an explicit invalidation trigger written down (which write path bumps which key).
+3. Resolve the disagreement in a one-pager, not a meeting: current numbers, cost of each option, the failure mode each adds, and a reversible first step (batch the queries — zero new infra). Commit to re-measuring in a week.
+
+Why this lands: the disagreement dissolves once the profile exists — caching vs indexing was the wrong axis. The senior engineer\'s pushback was really "do not add infra before the profile justifies it", and the answer shows you heard that.`,
+    explanation: 'The tested judgment: both camps are usually arguing past each other until measurements exist. Proposing the reversible step (batching) before the infrastructure step (Redis) is the senior signal.',
+    commonMistakes: 'Defending the original proposal for ego; conceding entirely without data; treating "it depends" as an answer instead of naming what it depends on.',
+    interviewTip: 'Say "the disagreement dissolves with a flame graph" — it shows you resolve technical conflict with evidence, not politics.',
+    relatedConcepts: ['N+1 / fan-out queries', 'Batching', 'Invalidation', 'Latency profiling'],
   }),
 ];
 
@@ -688,17 +799,17 @@ LIMIT 100;
   q({
     id: 'i-pj-009', topic: 'aptitude', subTopic: 'Logical Reasoning', difficulty: 'medium',
     questionType: 'mcq', estimatedTime: 90,
-    question: 'In a code review, exactly one of these four statements is true. Which one?',
+    question: 'Exactly one of these four statements about this PR batch is true. Which one?',
     options: [
       'All four PRs in this batch have failing tests',
-      'None of the four PRs have failing tests',
-      'Exactly two PRs have failing tests',
       'Exactly three PRs have failing tests',
+      'Exactly one PR has a failing test',
+      'At least one PR has a failing test',
     ],
     correctOption: 3,
-    answer: 'Exactly three PRs have failing tests',
-    explanation: 'Test all cases: if "all four" were true, "none" is false, "exactly two" false, "exactly three" false → one truth (works!). But "exactly three" true makes "all four" false, "none" false, "exactly two" false → also one truth. Two candidates work unless one is contradictory: "all four" true requires each of the other three false — consistent. Re-check "exactly three": it makes "all four" false — consistent too. The resolution: "all four have failing tests" logically implies "exactly three" is false, but "exactly three" also implies "all four" is false — both cannot hold simultaneously ONLY if the same PRs are referenced; with the constraint "exactly one true", the consistent answer is D because A and D are mutually exclusive while A also falsifies B and C.',
-    commonMistakes: 'Not checking mutual exclusivity of candidates; assuming "exactly three" contradicts "all four" without testing.',
+    answer: 'At least one PR has a failing test',
+    explanation: 'If A ("all four") were the one true statement, then D ("at least one") would also be true — two truths, contradiction. The same applies to B and C: each implies D. So A, B, C must all be false, which makes D the only true statement — and it constrains the actual world to 1, 2 or 3 failing PRs.',
+    commonMistakes: 'Testing only whether a candidate world is consistent, instead of also checking that the other statements are false in it; missing that "at least one" is implied by each of the others.',
     interviewTip: 'In these puzzles, enumerate combinations systematically instead of pattern-matching.',
     relatedConcepts: ['Truth tables', 'Systematic elimination'],
   }),
